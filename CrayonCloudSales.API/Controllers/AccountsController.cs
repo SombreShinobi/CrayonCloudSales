@@ -43,7 +43,7 @@ namespace CrayonCloudSales.API.Controllers
             // Verify that the account belongs to the customer
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(id, customerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
                 
             var account = await _accountRepository.GetAccountByIdAsync(id);
             if (account == null)

@@ -32,7 +32,7 @@ namespace CrayonCloudSales.API.Controllers
 
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(accountId, customerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
 
             var licenses = await _softwareLicenseRepository.GetLicensesByAccountIdAsync(accountId);
 
@@ -53,6 +53,39 @@ namespace CrayonCloudSales.API.Controllers
             return Ok(licenseDtos);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetLicenseById(int id, [FromQuery] int customerId)
+        {
+            if (id <= 0 || customerId <= 0)
+                return BadRequest("Invalid IDs provided");
+
+            var license = await _softwareLicenseRepository.GetLicenseByIdAsync(id);
+            if (license == null)
+                return NotFound();
+
+            bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(license.AccountId, customerId);
+            if (!accountBelongsToCustomer)
+                return StatusCode(403);
+
+            var softwareService = await _ccpService.GetServiceByIdAsync(license.SoftwareServiceId);
+            if (softwareService == null)
+            {
+                return NotFound("Software service not found");
+            }
+
+            var licenseDto = new SoftwareLicenseDto
+            {
+                Id = license.Id,
+                SoftwareName = softwareService.Name ?? "Unknown",
+                Quantity = license.Quantity,
+                State = license.State.ToString(),
+                PurchaseDate = license.PurchaseDate,
+                ValidToDate = license.ValidToDate
+            };
+
+            return Ok(licenseDto);
+        }
+
         [HttpPost("order")]
         public async Task<IActionResult> OrderSoftware([FromBody] OrderSoftwareRequest request)
         {
@@ -61,7 +94,7 @@ namespace CrayonCloudSales.API.Controllers
 
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(request.AccountId, request.CustomerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
 
             var softwareService = await _ccpService.GetServiceByIdAsync(request.SoftwareServiceId);
             if (softwareService == null)
@@ -109,39 +142,6 @@ namespace CrayonCloudSales.API.Controllers
             return CreatedAtAction(nameof(GetLicenseById), new { id = addedLicense.Id }, licenseDto);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetLicenseById(int id, [FromQuery] int customerId)
-        {
-            if (id <= 0 || customerId <= 0)
-                return BadRequest("Invalid IDs provided");
-
-            var license = await _softwareLicenseRepository.GetLicenseByIdAsync(id);
-            if (license == null)
-                return NotFound();
-
-            bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(license.AccountId, customerId);
-            if (!accountBelongsToCustomer)
-                return Forbid();
-
-            var softwareService = await _ccpService.GetServiceByIdAsync(license.SoftwareServiceId);
-            if (softwareService == null)
-            {
-                return NotFound("Software service not found");
-            }
-
-            var licenseDto = new SoftwareLicenseDto
-            {
-                Id = license.Id,
-                SoftwareName = softwareService.Name ?? "Unknown",
-                Quantity = license.Quantity,
-                State = license.State.ToString(),
-                PurchaseDate = license.PurchaseDate,
-                ValidToDate = license.ValidToDate
-            };
-
-            return Ok(licenseDto);
-        }
-
         [HttpPut("{id}/quantity")]
         public async Task<IActionResult> UpdateLicenseQuantity(int id, [FromBody] UpdateQuantityRequest request)
         {
@@ -154,7 +154,7 @@ namespace CrayonCloudSales.API.Controllers
 
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(license.AccountId, request.CustomerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
 
             bool updateSuccess = await _ccpService.UpdateSoftwareQuantityAsync(license.CcpSubscriptionId, request.NewQuantity);
             if (!updateSuccess)
@@ -181,7 +181,7 @@ namespace CrayonCloudSales.API.Controllers
 
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(license.AccountId, customerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
 
             bool cancelSuccess = await _ccpService.CancelSoftwareAsync(license.CcpSubscriptionId);
             if (!cancelSuccess)
@@ -208,7 +208,7 @@ namespace CrayonCloudSales.API.Controllers
 
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(license.AccountId, customerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
 
             bool cancelSuccess = await _ccpService.ActivateSoftwareAsync(license.CcpSubscriptionId);
             if (!cancelSuccess)
@@ -232,7 +232,7 @@ namespace CrayonCloudSales.API.Controllers
 
             bool accountBelongsToCustomer = await _accountRepository.AccountBelongsToCustomerAsync(license.AccountId, request.CustomerId);
             if (!accountBelongsToCustomer)
-                return Forbid();
+                return StatusCode(403);
 
             bool extendSuccess = await _ccpService.ExtendSoftwareLicenseAsync(license.CcpSubscriptionId, request.NewValidToDate);
             if (!extendSuccess)
