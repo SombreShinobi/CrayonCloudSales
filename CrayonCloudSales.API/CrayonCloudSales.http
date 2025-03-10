@@ -1,0 +1,6 @@
+@CrayonCloudSales_HostAddress = http://localhost:5238
+
+GET {{CrayonCloudSales_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
